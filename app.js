@@ -1,58 +1,52 @@
 import { supabase, supabaseReady } from "./supabase-config.js";
 import { seedDays } from "./seed-data.js";
 
-const CATEGORY_ICON = { spot: "📍", food: "🍽️", transport: "🚃", hotel: "🏨", note: "📝" };
-
-const DAY_THEMES = [
-  { emoji: "🏮", from: "#8a4a2b", to: "#c9704f" }, // 高山老街
-  { emoji: "🏡", from: "#3f6b4f", to: "#7fa66b" }, // 白川鄉合掌村
-  { emoji: "🎏", from: "#2f7d76", to: "#c9a24a" }, // 金澤兼六園・金箔
-  { emoji: "🏔️", from: "#2d4f7c", to: "#7ea6d6" }, // 立山黑部
-  { emoji: "🍁", from: "#3f7a4f", to: "#e0954f" }, // 上高地・諏訪湖夕陽
-  { emoji: "🌇", from: "#6a4a8c", to: "#d4708c" }, // 諏訪湖・名古屋夜景
-  { emoji: "🏯", from: "#8a6a2d", to: "#c9a24a" }, // 名古屋城
-  { emoji: "✈️", from: "#2d6a8c", to: "#6bb3d6" }, // 返台
-];
-
-function themeFor(day) {
-  return DAY_THEMES[(day.order_num - 1) % DAY_THEMES.length];
-}
-
-function openMapsFor(item) {
-  const query = (item.map_query && item.map_query.trim()) || item.text;
-  window.open("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(query), "_blank", "noopener");
-}
+const CATEGORY_META = {
+  spot: { badge: "badge-green", label: "景點" },
+  food: { badge: "badge-pink", label: "美食" },
+  transport: { badge: "badge-blue", label: "交通" },
+  hotel: { badge: "badge-teal", label: "住宿" },
+  note: { badge: "badge-orange", label: "備註" },
+};
 
 const el = {
-  app: document.getElementById("app"),
-  tabs: document.getElementById("day-tabs"),
+  dayPills: document.getElementById("day-pills"),
+  dayList: document.getElementById("day-list"),
   loading: document.getElementById("loading-msg"),
   syncStatus: document.getElementById("sync-status"),
   addDayBtn: document.getElementById("add-day-btn"),
+  searchInput: document.getElementById("trip-search"),
+  searchClear: document.getElementById("search-clear"),
   modalOverlay: document.getElementById("modal-overlay"),
   modalTitle: document.getElementById("modal-title"),
   itemForm: document.getElementById("item-form"),
   fieldPeriod: document.getElementById("field-period"),
   fieldCategory: document.getElementById("field-category"),
+  fieldName: document.getElementById("field-name"),
   fieldText: document.getElementById("field-text"),
   fieldMap: document.getElementById("field-map"),
   modalCancel: document.getElementById("modal-cancel"),
   modalCloseX: document.getElementById("modal-close-x"),
 };
 
-let state = { days: [] }; // each day: {..., items: [...] } sorted
-let activeDayId = null;
-let editingCtx = null; // { dayId, itemId } itemId null = adding new
+let state = { days: [] };
+let editingCtx = null;
+let dayObserver = null;
 
 function setSyncStatus(text, cls) {
   el.syncStatus.textContent = text;
   el.syncStatus.className = "sync-status" + (cls ? " " + cls : "");
 }
 
+function openMapsFor(item) {
+  const query = (item.map_query && item.map_query.trim()) || item.name || item.text || "";
+  window.open("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(query), "_blank", "noopener");
+}
+
 async function init() {
   if (!supabaseReady) {
     el.loading.remove();
-    el.app.innerHTML = `<div class="config-warning">
+    el.dayList.innerHTML = `<div class="config-warning">
       ⚠️ 尚未設定 Supabase。<br/><br/>
       請打開 <code>supabase-config.js</code>，把 <code>YOUR_SUPABASE_URL</code> 和
       <code>YOUR_SUPABASE_ANON_KEY</code> 換成你自己 Supabase 專案的值，存檔後重新整理頁面。
@@ -91,8 +85,6 @@ async function loadData() {
     ...d,
     items: (items || []).filter((i) => i.day_id === d.id),
   }));
-
-  if (!activeDayId && state.days.length) activeDayId = state.days[0].id;
 }
 
 async function seedDatabase() {
@@ -103,7 +95,15 @@ async function seedDatabase() {
   const itemRows = [];
   for (const day of seedDays) {
     day.items.forEach((item, idx) => {
-      itemRows.push({ day_id: day.id, period: item.period, category: item.category, text: item.text, map_query: item.map_query || null, position: idx });
+      itemRows.push({
+        day_id: day.id,
+        period: item.period,
+        name: item.name,
+        category: item.category,
+        text: item.text || null,
+        map_query: item.map_query || null,
+        position: idx,
+      });
     });
   }
   const { error: e2 } = await supabase.from("items").insert(itemRows);
@@ -139,46 +139,65 @@ function subscribeRealtime() {
 
 function render() {
   el.loading?.remove();
-  renderTabs();
-  renderDays();
+  renderPills();
+  renderDayList();
+  applyFilter();
 }
 
-function renderTabs() {
-  el.tabs.innerHTML = "";
+function renderPills() {
+  el.dayPills.innerHTML = "";
   state.days.forEach((day) => {
-    const btn = document.createElement("button");
-    btn.className = "day-tab" + (day.id === activeDayId ? " active" : "");
-    btn.textContent = day.date;
-    btn.addEventListener("click", () => {
-      activeDayId = day.id;
-      render();
+    const pill = document.createElement("button");
+    pill.type = "button";
+    pill.className = "pill";
+    pill.dataset.dayId = day.id;
+    pill.textContent = day.date;
+    pill.addEventListener("click", () => {
+      document.getElementById("day-" + day.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-    el.tabs.appendChild(btn);
+    el.dayPills.appendChild(pill);
+  });
+  setActivePill(state.days[0]?.id);
+}
+
+function setActivePill(dayId) {
+  el.dayPills.querySelectorAll(".pill").forEach((p) => {
+    p.classList.toggle("on", p.dataset.dayId === dayId);
   });
 }
 
-function renderDays() {
-  el.app.innerHTML = "";
+function renderDayList() {
+  dayObserver?.disconnect();
+  el.dayList.innerHTML = "";
+  state.days.forEach((day, idx) => {
+    el.dayList.appendChild(renderDayCard(day, idx + 1));
+  });
+
+  dayObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) setActivePill(entry.target.dataset.dayId);
+      });
+    },
+    { rootMargin: "-40% 0px -50% 0px" }
+  );
   state.days.forEach((day) => {
-    const section = document.createElement("section");
-    section.className = "day-section" + (day.id === activeDayId ? " active" : "");
-    section.appendChild(renderDayCard(day));
-    el.app.appendChild(section);
+    const node = document.getElementById("day-" + day.id);
+    if (node) dayObserver.observe(node);
   });
 }
 
-function renderDayCard(day) {
+function renderDayCard(day, dayNum) {
   const card = document.createElement("div");
   card.className = "day-card";
+  card.id = "day-" + day.id;
+  card.dataset.dayId = day.id;
 
-  const theme = themeFor(day);
-  const banner = document.createElement("div");
-  banner.className = "day-banner";
-  banner.style.background = `linear-gradient(135deg, ${theme.from}, ${theme.to})`;
+  const hd = document.createElement("div");
+  hd.className = "day-hd";
 
-  const bannerEmoji = document.createElement("div");
-  bannerEmoji.className = "day-banner-emoji";
-  bannerEmoji.textContent = theme.emoji;
+  const main = document.createElement("div");
+  main.className = "day-hd-main";
 
   const dateEl = document.createElement("div");
   dateEl.className = "day-date";
@@ -203,83 +222,97 @@ function renderDayCard(day) {
     if (newVal !== (day.hotel || "")) updateDay(day.id, { hotel: newVal });
   });
 
-  banner.append(bannerEmoji, dateEl, titleEl, hotelEl);
-  card.appendChild(banner);
+  main.append(dateEl, titleEl, hotelEl);
 
-  const body = document.createElement("div");
-  body.className = "day-body";
-  card.appendChild(body);
+  const badge = document.createElement("div");
+  badge.className = "day-badge";
+  badge.textContent = "Day " + dayNum;
 
-  const list = document.createElement("ul");
-  list.className = "item-list";
+  hd.append(main, badge);
+  card.appendChild(hd);
 
   if (day.items.length === 0) {
-    const empty = document.createElement("li");
+    const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.textContent = "這天還沒有行程，點下面新增一個吧！";
-    list.appendChild(empty);
+    empty.textContent = "這天還沒有行程";
+    card.appendChild(empty);
   }
 
-  day.items.forEach((item) => list.appendChild(renderItemRow(day, item)));
-  body.appendChild(list);
+  day.items.forEach((item) => card.appendChild(renderItemRow(day, item)));
 
-  const addBtnWrap = document.createElement("div");
-  addBtnWrap.className = "add-item-wrap";
+  const addWrap = document.createElement("div");
+  addWrap.className = "add-item-wrap";
   const addBtn = document.createElement("button");
+  addBtn.type = "button";
   addBtn.className = "add-item-btn";
-  addBtn.textContent = "＋ 新增行程";
+  addBtn.innerHTML = `<i class="ti ti-plus"></i> 新增`;
   addBtn.addEventListener("click", () => openModal({ dayId: day.id, item: null }));
-  addBtnWrap.appendChild(addBtn);
-  body.appendChild(addBtnWrap);
+  addWrap.appendChild(addBtn);
+  card.appendChild(addWrap);
 
   return card;
 }
 
 function renderItemRow(day, item) {
-  const li = document.createElement("li");
-  li.className = "item-row cat-" + (item.category || "spot");
+  const row = document.createElement("div");
+  row.className = "item";
+  row.addEventListener("click", () => openMapsFor(item));
 
-  const badge = document.createElement("div");
-  badge.className = "item-badge";
-  badge.textContent = CATEGORY_ICON[item.category] || "📍";
+  const time = document.createElement("div");
+  time.className = "item-time";
+  time.textContent = item.period;
 
   const body = document.createElement("div");
   body.className = "item-body";
-  body.title = "點一下在 Google 地圖開啟";
-  body.addEventListener("click", () => openMapsFor(item));
 
-  const period = document.createElement("div");
-  period.className = "item-period";
-  period.textContent = item.period + " 🗺️";
-  const text = document.createElement("div");
-  text.className = "item-text";
-  text.textContent = item.text;
-  body.append(period, text);
+  const meta = CATEGORY_META[item.category] || CATEGORY_META.spot;
+  const name = document.createElement("div");
+  name.className = "item-name";
+  const badge = document.createElement("span");
+  badge.className = "badge " + meta.badge;
+  badge.textContent = meta.label;
+  name.appendChild(badge);
+  name.appendChild(document.createTextNode(item.name || item.text || ""));
+  body.appendChild(name);
+
+  if (item.text && item.name) {
+    const note = document.createElement("div");
+    note.className = "item-note";
+    note.textContent = item.text;
+    body.appendChild(note);
+  }
+
+  const mapHint = document.createElement("div");
+  mapHint.className = "item-map";
+  mapHint.innerHTML = `<i class="ti ti-map-pin"></i> 點擊開啟地圖`;
+  body.appendChild(mapHint);
 
   const actions = document.createElement("div");
   actions.className = "item-actions";
 
   const editBtn = document.createElement("button");
+  editBtn.type = "button";
   editBtn.className = "icon-btn";
   editBtn.title = "編輯";
-  editBtn.textContent = "✏️";
+  editBtn.innerHTML = `<i class="ti ti-pencil"></i>`;
   editBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     openModal({ dayId: day.id, item });
   });
 
   const delBtn = document.createElement("button");
+  delBtn.type = "button";
   delBtn.className = "icon-btn";
   delBtn.title = "刪除";
-  delBtn.textContent = "🗑️";
+  delBtn.innerHTML = `<i class="ti ti-trash"></i>`;
   delBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     deleteItem(item);
   });
 
   actions.append(editBtn, delBtn);
-  li.append(badge, body, actions);
-  return li;
+  row.append(time, body, actions);
+  return row;
 }
 
 function openModal({ dayId, item }) {
@@ -287,7 +320,8 @@ function openModal({ dayId, item }) {
   el.modalTitle.textContent = item ? "編輯行程" : "新增行程";
   el.fieldPeriod.value = item ? item.period : "";
   el.fieldCategory.value = item ? item.category : "spot";
-  el.fieldText.value = item ? item.text : "";
+  el.fieldName.value = item ? item.name || "" : "";
+  el.fieldText.value = item ? item.text || "" : "";
   el.fieldMap.value = item ? item.map_query || "" : "";
   el.modalOverlay.hidden = false;
   el.fieldPeriod.focus();
@@ -312,18 +346,19 @@ el.itemForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const period = el.fieldPeriod.value.trim();
   const category = el.fieldCategory.value;
-  const text = el.fieldText.value.trim();
+  const name = el.fieldName.value.trim();
+  const text = el.fieldText.value.trim() || null;
   const map_query = el.fieldMap.value.trim() || null;
-  if (!period || !text) return;
+  if (!period || !name) return;
 
   const { dayId, itemId } = editingCtx;
   try {
     if (itemId) {
-      await supabase.from("items").update({ period, category, text, map_query }).eq("id", itemId);
+      await supabase.from("items").update({ period, category, name, text, map_query }).eq("id", itemId);
     } else {
       const day = state.days.find((d) => d.id === dayId);
       const maxPos = day.items.reduce((m, i) => Math.max(m, i.position ?? 0), -1);
-      await supabase.from("items").insert({ day_id: dayId, period, category, text, map_query, position: maxPos + 1 });
+      await supabase.from("items").insert({ day_id: dayId, period, category, name, text, map_query, position: maxPos + 1 });
     }
     closeModal();
     await loadData();
@@ -360,19 +395,39 @@ async function updateDay(dayId, fields) {
 el.addDayBtn.addEventListener("click", async () => {
   const date = prompt("日期（例如：9/03（四））");
   if (!date) return;
-  const title = prompt("這天的標題（例如：D9：延伸行程）");
+  const title = prompt("這天的標題（例如：延伸行程）");
   if (!title) return;
   const maxOrder = state.days.reduce((m, d) => Math.max(m, d.order_num), 0);
   const id = "day" + Date.now();
   try {
     await supabase.from("days").insert({ id, order_num: maxOrder + 1, date, title, hotel: "" });
-    activeDayId = id;
     await loadData();
     render();
   } catch (err) {
     console.error(err);
     alert("新增失敗，請檢查網路連線或 Supabase 設定。");
   }
+});
+
+function applyFilter() {
+  const query = el.searchInput.value.toLowerCase().trim();
+  el.searchClear.hidden = !query;
+
+  document.querySelectorAll(".day-card").forEach((card) => {
+    let hasMatch = false;
+    card.querySelectorAll(".item").forEach((item) => {
+      const match = !query || item.textContent.toLowerCase().includes(query);
+      item.style.display = match ? "flex" : "none";
+      if (match) hasMatch = true;
+    });
+    card.style.display = query === "" || hasMatch ? "block" : "none";
+  });
+}
+
+el.searchInput.addEventListener("input", applyFilter);
+el.searchClear.addEventListener("click", () => {
+  el.searchInput.value = "";
+  applyFilter();
 });
 
 init();

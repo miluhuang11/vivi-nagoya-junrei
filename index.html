@@ -3,64 +3,76 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
-<title>名古屋・高山・立山黑部 聖地巡禮 8日行程</title>
+<title>名古屋・高山・立山黑部 聖地巡禮</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗾</text></svg>" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<header class="app-header">
-  <div class="header-inner">
-    <h1>🗾 名古屋・高山・立山黑部・聖地巡禮 ✨</h1>
-    <p class="subtitle">📅 2026/08/26 – 09/02　｜　🎬《冰菓》×《你的名字》巡禮行程</p>
+<div class="app">
+  <div class="hero">
+    <div class="hero-eyebrow">🎬 MILU · 2026 聖地巡禮</div>
+    <div class="hero-title">名古屋・高山・立山黑部</div>
+    <div class="hero-sub">8/26 – 9/02　｜　《冰菓》×《你的名字》</div>
+    <div id="sync-status" class="sync-status">連線中…</div>
   </div>
-  <div id="sync-status" class="sync-status">連線中…</div>
-</header>
 
-<nav id="day-tabs" class="day-tabs"></nav>
+  <div class="day-pills" id="day-pills"></div>
 
-<main id="app" class="app-main">
-  <div class="loading" id="loading-msg">行程載入中，請稍候…</div>
-</main>
+  <div class="search-container">
+    <i class="ti ti-search search-icon"></i>
+    <input type="text" id="trip-search" placeholder="搜尋景點、時間、備註…" />
+    <button id="search-clear" class="search-clear" hidden aria-label="清除搜尋">&times;</button>
+  </div>
 
-<button id="add-day-btn" class="fab" title="新增一天" hidden>＋</button>
+  <div class="day-list" id="day-list">
+    <div class="loading" id="loading-msg">行程載入中，請稍候…</div>
+  </div>
+
+  <p class="app-footer">💾 修改自動保存　｜　🗺️ 點行程可開地圖</p>
+
+  <button id="add-day-btn" class="fab" title="新增一天" hidden><i class="ti ti-plus"></i></button>
+</div>
 
 <div id="modal-overlay" class="modal-overlay" hidden>
-  <div class="modal">
-    <div class="modal-head">
-      <h3 id="modal-title">新增景點</h3>
-      <button type="button" id="modal-close-x" class="modal-close-x" aria-label="關閉" title="關閉">✕</button>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modal-title">新增行程</h3>
+      <button type="button" id="modal-close-x" class="btn-close" aria-label="關閉">&times;</button>
     </div>
     <form id="item-form">
-      <label>時段標籤 <span class="hint">(例如：上午 / 午餐 / 傍晚 / 宿)</span>
-        <input type="text" id="field-period" placeholder="上午" required />
-      </label>
-      <label>類型
-        <select id="field-category">
-          <option value="spot">📍 景點</option>
-          <option value="food">🍽️ 美食</option>
-          <option value="transport">🚃 交通</option>
-          <option value="hotel">🏨 住宿</option>
-          <option value="note">📝 備註</option>
-        </select>
-      </label>
-      <label>內容
-        <textarea id="field-text" rows="4" placeholder="描述這個景點/行程內容…" required></textarea>
-      </label>
-      <label>🗺️ Google 地圖關鍵字 <span class="hint">(選填，例如：兼六園。留空會直接用上面的內容搜尋)</span>
-        <input type="text" id="field-map" placeholder="地點名稱" />
-      </label>
-      <div class="modal-actions">
-        <button type="button" id="modal-cancel" class="btn btn-ghost">取消</button>
-        <button type="submit" class="btn btn-primary">儲存</button>
+      <div class="modal-body">
+        <label>時間
+          <input type="text" id="field-period" placeholder="09:00" required />
+        </label>
+        <label>類型
+          <select id="field-category">
+            <option value="spot">📍 景點</option>
+            <option value="food">🍽️ 美食</option>
+            <option value="transport">🚃 交通</option>
+            <option value="hotel">🏨 住宿</option>
+            <option value="note">📝 備註</option>
+          </select>
+        </label>
+        <label>標題
+          <input type="text" id="field-name" placeholder="例如：🏯 名古屋城" required />
+        </label>
+        <label>備註 <span class="modal-tip">選填，簡短一句話就好</span>
+          <textarea id="field-text" rows="2" placeholder=""></textarea>
+        </label>
+        <label>🗺️ Google 地圖關鍵字 <span class="modal-tip">選填，留空會用標題搜尋</span>
+          <input type="text" id="field-map" placeholder="地點名稱" />
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="modal-cancel" class="btn-cancel">取消</button>
+        <button type="submit" class="btn-save">儲存</button>
       </div>
     </form>
   </div>
 </div>
-
-<footer class="app-footer">
-  <p>💾 修改會自動保存　｜　🗺️ 點行程項目可開 Google 地圖　｜　✏️ 隨時新增／編輯／刪除景點</p>
-</footer>
 
 <script type="module" src="app.js"></script>
 </body>

@@ -12,9 +12,10 @@ create table if not exists days (
 create table if not exists items (
   id uuid primary key default gen_random_uuid(),
   day_id text not null references days(id) on delete cascade,
-  period text not null,
+  period text not null, -- 存放具體時間，例如 "09:30"
+  name text not null default '', -- 簡短標題
   category text not null default 'spot',
-  text text not null,
+  text text, -- 補充備註，選填
   map_query text,
   position int not null default 0,
   created_at timestamptz default now()
