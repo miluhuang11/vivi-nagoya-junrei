@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
 <title>名古屋・高山・立山黑部 聖地巡禮 8日行程</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗾</text></svg>" />
 <link rel="stylesheet" href="style.css" />
@@ -11,8 +11,8 @@
 
 <header class="app-header">
   <div class="header-inner">
-    <h1>🗾 名古屋・高山・立山黑部・聖地巡禮</h1>
-    <p class="subtitle">2026/08/26 – 2026/09/02　｜　《冰菓》×《你的名字》巡禮行程</p>
+    <h1>🗾 名古屋・高山・立山黑部・聖地巡禮 ✨</h1>
+    <p class="subtitle">📅 2026/08/26 – 09/02　｜　🎬《冰菓》×《你的名字》巡禮行程</p>
   </div>
   <div id="sync-status" class="sync-status">連線中…</div>
 </header>
@@ -23,11 +23,14 @@
   <div class="loading" id="loading-msg">行程載入中，請稍候…</div>
 </main>
 
-<button id="add-day-btn" class="fab" title="新增一天" hidden>＋ 新增天數</button>
+<button id="add-day-btn" class="fab" title="新增一天" hidden>＋</button>
 
 <div id="modal-overlay" class="modal-overlay" hidden>
   <div class="modal">
-    <h3 id="modal-title">新增景點</h3>
+    <div class="modal-head">
+      <h3 id="modal-title">新增景點</h3>
+      <button type="button" id="modal-close-x" class="modal-close-x" aria-label="關閉" title="關閉">✕</button>
+    </div>
     <form id="item-form">
       <label>時段標籤 <span class="hint">(例如：上午 / 午餐 / 傍晚 / 宿)</span>
         <input type="text" id="field-period" placeholder="上午" required />
@@ -44,6 +47,9 @@
       <label>內容
         <textarea id="field-text" rows="4" placeholder="描述這個景點/行程內容…" required></textarea>
       </label>
+      <label>🗺️ Google 地圖關鍵字 <span class="hint">(選填，例如：兼六園。留空會直接用上面的內容搜尋)</span>
+        <input type="text" id="field-map" placeholder="地點名稱" />
+      </label>
       <div class="modal-actions">
         <button type="button" id="modal-cancel" class="btn btn-ghost">取消</button>
         <button type="submit" class="btn btn-primary">儲存</button>
@@ -53,7 +59,7 @@
 </div>
 
 <footer class="app-footer">
-  <p>大家可以自由新增／編輯／刪除景點，內容會即時同步給所有人 ✨</p>
+  <p>💾 修改會自動保存　｜　🗺️ 點行程項目可開 Google 地圖　｜　✏️ 隨時新增／編輯／刪除景點</p>
 </footer>
 
 <script type="module" src="app.js"></script>

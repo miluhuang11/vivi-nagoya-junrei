@@ -3,6 +3,26 @@ import { seedDays } from "./seed-data.js";
 
 const CATEGORY_ICON = { spot: "📍", food: "🍽️", transport: "🚃", hotel: "🏨", note: "📝" };
 
+const DAY_THEMES = [
+  { emoji: "🏮", from: "#8a4a2b", to: "#c9704f" }, // 高山老街
+  { emoji: "🏡", from: "#3f6b4f", to: "#7fa66b" }, // 白川鄉合掌村
+  { emoji: "🎏", from: "#2f7d76", to: "#c9a24a" }, // 金澤兼六園・金箔
+  { emoji: "🏔️", from: "#2d4f7c", to: "#7ea6d6" }, // 立山黑部
+  { emoji: "🍁", from: "#3f7a4f", to: "#e0954f" }, // 上高地・諏訪湖夕陽
+  { emoji: "🌇", from: "#6a4a8c", to: "#d4708c" }, // 諏訪湖・名古屋夜景
+  { emoji: "🏯", from: "#8a6a2d", to: "#c9a24a" }, // 名古屋城
+  { emoji: "✈️", from: "#2d6a8c", to: "#6bb3d6" }, // 返台
+];
+
+function themeFor(day) {
+  return DAY_THEMES[(day.order_num - 1) % DAY_THEMES.length];
+}
+
+function openMapsFor(item) {
+  const query = (item.map_query && item.map_query.trim()) || item.text;
+  window.open("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(query), "_blank", "noopener");
+}
+
 const el = {
   app: document.getElementById("app"),
   tabs: document.getElementById("day-tabs"),
@@ -15,7 +35,9 @@ const el = {
   fieldPeriod: document.getElementById("field-period"),
   fieldCategory: document.getElementById("field-category"),
   fieldText: document.getElementById("field-text"),
+  fieldMap: document.getElementById("field-map"),
   modalCancel: document.getElementById("modal-cancel"),
+  modalCloseX: document.getElementById("modal-close-x"),
 };
 
 let state = { days: [] }; // each day: {..., items: [...] } sorted
@@ -81,7 +103,7 @@ async function seedDatabase() {
   const itemRows = [];
   for (const day of seedDays) {
     day.items.forEach((item, idx) => {
-      itemRows.push({ day_id: day.id, period: item.period, category: item.category, text: item.text, position: idx });
+      itemRows.push({ day_id: day.id, period: item.period, category: item.category, text: item.text, map_query: item.map_query || null, position: idx });
     });
   }
   const { error: e2 } = await supabase.from("items").insert(itemRows);
@@ -106,7 +128,7 @@ function subscribeRealtime() {
     .channel("public:items")
     .on("postgres_changes", { event: "*", schema: "public", table: "items" }, scheduleRefetch)
     .subscribe((status) => {
-      if (status === "SUBSCRIBED") setSyncStatus("即時同步中 ✓", "ok");
+      if (status === "SUBSCRIBED") setSyncStatus("已連線・自動保存 ✓", "ok");
     });
 
   supabase
@@ -149,11 +171,14 @@ function renderDayCard(day) {
   const card = document.createElement("div");
   card.className = "day-card";
 
-  const head = document.createElement("div");
-  head.className = "day-card-head";
+  const theme = themeFor(day);
+  const banner = document.createElement("div");
+  banner.className = "day-banner";
+  banner.style.background = `linear-gradient(135deg, ${theme.from}, ${theme.to})`;
 
-  const titleBlock = document.createElement("div");
-  titleBlock.className = "day-title-block";
+  const bannerEmoji = document.createElement("div");
+  bannerEmoji.className = "day-banner-emoji";
+  bannerEmoji.textContent = theme.emoji;
 
   const dateEl = document.createElement("div");
   dateEl.className = "day-date";
@@ -178,9 +203,12 @@ function renderDayCard(day) {
     if (newVal !== (day.hotel || "")) updateDay(day.id, { hotel: newVal });
   });
 
-  titleBlock.append(dateEl, titleEl, hotelEl);
-  head.appendChild(titleBlock);
-  card.appendChild(head);
+  banner.append(bannerEmoji, dateEl, titleEl, hotelEl);
+  card.appendChild(banner);
+
+  const body = document.createElement("div");
+  body.className = "day-body";
+  card.appendChild(body);
 
   const list = document.createElement("ul");
   list.className = "item-list";
@@ -193,13 +221,16 @@ function renderDayCard(day) {
   }
 
   day.items.forEach((item) => list.appendChild(renderItemRow(day, item)));
-  card.appendChild(list);
+  body.appendChild(list);
 
+  const addBtnWrap = document.createElement("div");
+  addBtnWrap.className = "add-item-wrap";
   const addBtn = document.createElement("button");
   addBtn.className = "add-item-btn";
-  addBtn.textContent = "＋ 新增這天的行程";
+  addBtn.textContent = "＋ 新增行程";
   addBtn.addEventListener("click", () => openModal({ dayId: day.id, item: null }));
-  card.appendChild(addBtn);
+  addBtnWrap.appendChild(addBtn);
+  body.appendChild(addBtnWrap);
 
   return card;
 }
@@ -214,9 +245,12 @@ function renderItemRow(day, item) {
 
   const body = document.createElement("div");
   body.className = "item-body";
+  body.title = "點一下在 Google 地圖開啟";
+  body.addEventListener("click", () => openMapsFor(item));
+
   const period = document.createElement("div");
   period.className = "item-period";
-  period.textContent = item.period;
+  period.textContent = item.period + " 🗺️";
   const text = document.createElement("div");
   text.className = "item-text";
   text.textContent = item.text;
@@ -229,13 +263,19 @@ function renderItemRow(day, item) {
   editBtn.className = "icon-btn";
   editBtn.title = "編輯";
   editBtn.textContent = "✏️";
-  editBtn.addEventListener("click", () => openModal({ dayId: day.id, item }));
+  editBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openModal({ dayId: day.id, item });
+  });
 
   const delBtn = document.createElement("button");
   delBtn.className = "icon-btn";
   delBtn.title = "刪除";
   delBtn.textContent = "🗑️";
-  delBtn.addEventListener("click", () => deleteItem(item));
+  delBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    deleteItem(item);
+  });
 
   actions.append(editBtn, delBtn);
   li.append(badge, body, actions);
@@ -248,6 +288,7 @@ function openModal({ dayId, item }) {
   el.fieldPeriod.value = item ? item.period : "";
   el.fieldCategory.value = item ? item.category : "spot";
   el.fieldText.value = item ? item.text : "";
+  el.fieldMap.value = item ? item.map_query || "" : "";
   el.modalOverlay.hidden = false;
   el.fieldPeriod.focus();
 }
@@ -259,8 +300,12 @@ function closeModal() {
 }
 
 el.modalCancel.addEventListener("click", closeModal);
+el.modalCloseX.addEventListener("click", closeModal);
 el.modalOverlay.addEventListener("click", (e) => {
   if (e.target === el.modalOverlay) closeModal();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !el.modalOverlay.hidden) closeModal();
 });
 
 el.itemForm.addEventListener("submit", async (e) => {
@@ -268,16 +313,17 @@ el.itemForm.addEventListener("submit", async (e) => {
   const period = el.fieldPeriod.value.trim();
   const category = el.fieldCategory.value;
   const text = el.fieldText.value.trim();
+  const map_query = el.fieldMap.value.trim() || null;
   if (!period || !text) return;
 
   const { dayId, itemId } = editingCtx;
   try {
     if (itemId) {
-      await supabase.from("items").update({ period, category, text }).eq("id", itemId);
+      await supabase.from("items").update({ period, category, text, map_query }).eq("id", itemId);
     } else {
       const day = state.days.find((d) => d.id === dayId);
       const maxPos = day.items.reduce((m, i) => Math.max(m, i.position ?? 0), -1);
-      await supabase.from("items").insert({ day_id: dayId, period, category, text, position: maxPos + 1 });
+      await supabase.from("items").insert({ day_id: dayId, period, category, text, map_query, position: maxPos + 1 });
     }
     closeModal();
     await loadData();

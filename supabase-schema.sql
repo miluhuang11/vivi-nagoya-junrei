@@ -15,6 +15,7 @@ create table if not exists items (
   period text not null,
   category text not null default 'spot',
   text text not null,
+  map_query text,
   position int not null default 0,
   created_at timestamptz default now()
 );
