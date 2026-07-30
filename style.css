@@ -47,43 +47,49 @@ body{
 
 /* Hero */
 .hero{
-  padding: 22px 20px 16px;
-  border-bottom: 1px solid var(--border);
+  padding: 30px 20px 24px;
+  background: linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.6)), url('https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/Nagoya_Castle%28Edit2%29.jpg/1280px-Nagoya_Castle%28Edit2%29.jpg') no-repeat center center;
+  background-size: cover;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   position: relative;
+  transition: background 0.4s ease;
 }
 .hero-eyebrow{
   font-size: 10px;
   font-weight: 700;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: var(--text3);
+  color: rgba(255, 255, 255, 0.85);
   margin-bottom: 6px;
 }
 .hero-title{
   font-size: 22px;
   font-weight: 700;
-  color: var(--text);
+  color: #ffffff;
   line-height: 1.25;
   margin-bottom: 4px;
 }
 .hero-sub{
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--text2);
+  color: rgba(255, 255, 255, 0.7);
 }
 .sync-status{
   position: absolute;
-  top: 22px;
+  top: 30px;
   right: 20px;
   font-size: 10px;
   font-weight: 600;
-  background: var(--surface2);
-  color: var(--text2);
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.85);
   padding: 4px 10px;
   border-radius: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }
-.sync-status.ok{ background: var(--badge-green-bg); color: var(--badge-green-fg); }
-.sync-status.err{ background: var(--badge-pink-bg); color: var(--badge-pink-fg); }
+.sync-status.ok{ background: rgba(19, 115, 51, 0.85); color: #fff; border-color: rgba(19, 115, 51, 0.2); }
+.sync-status.err{ background: rgba(192, 57, 43, 0.85); color: #fff; border-color: rgba(192, 57, 43, 0.2); }
 
 /* Day pills (scroll nav) */
 .day-pills{

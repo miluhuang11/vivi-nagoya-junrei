@@ -202,6 +202,20 @@ function render() {
   renderPills();
   renderDayList();
   applyFilter();
+  if (activeDayId) {
+    updateHeroBackground(activeDayId);
+  }
+}
+
+function updateHeroBackground(dayId) {
+  const dayIdx = state.days.findIndex((d) => d.id === dayId);
+  if (dayIdx !== -1) {
+    const theme = themeFor(dayIdx);
+    const heroEl = document.querySelector(".hero");
+    if (heroEl && theme) {
+      heroEl.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.6)), url('${theme.photo}')`;
+    }
+  }
 }
 
 function renderPills() {
@@ -238,6 +252,7 @@ function setActiveDay(dayId) {
   el.dayList.scrollTop = 0;
   window.scrollTo({ top: 0, behavior: "smooth" });
   applyFilter();
+  updateHeroBackground(dayId);
 }
 
 function renderDayList() {
