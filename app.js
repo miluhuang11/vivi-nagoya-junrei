@@ -91,7 +91,7 @@ async function loadData() {
     ({ data: days } = await supabase.from("days").select("*").order("order_num"));
   }
 
-  const { data: items, error: itemsErr } = await supabase.from("items").select("*").order("position");
+  const { data: items, error: itemsErr } = await supabase.from("items").select("*").order("period");
   if (itemsErr) throw itemsErr;
 
   state.days = (days || []).map((d) => ({
@@ -377,9 +377,7 @@ el.itemForm.addEventListener("submit", async (e) => {
     if (itemId) {
       await supabase.from("items").update({ period, category, name, text, map_query }).eq("id", itemId);
     } else {
-      const day = state.days.find((d) => d.id === dayId);
-      const maxPos = day.items.reduce((m, i) => Math.max(m, i.position ?? 0), -1);
-      await supabase.from("items").insert({ day_id: dayId, period, category, name, text, map_query, position: maxPos + 1 });
+      await supabase.from("items").insert({ day_id: dayId, period, category, name, text, map_query });
     }
     closeModal();
     await loadData();

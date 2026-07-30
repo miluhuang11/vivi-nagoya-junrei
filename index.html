@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
-<title>名古屋・高山・立山黑部 聖地巡禮</title>
+<title>Vivi 聖地巡禮｜名古屋・高山・立山黑部</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗾</text></svg>" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -13,9 +13,9 @@
 
 <div class="app">
   <div class="hero">
-    <div class="hero-eyebrow">🎬 MILU · 2026 聖地巡禮</div>
-    <div class="hero-title">名古屋・高山・立山黑部</div>
-    <div class="hero-sub">8/26 – 9/02　｜　《冰菓》×《你的名字》</div>
+    <div class="hero-eyebrow">🎬 2026 日本行</div>
+    <div class="hero-title">Vivi 聖地巡禮</div>
+    <div class="hero-sub">名古屋・高山・立山黑部　｜　8/26 – 9/02</div>
     <div id="sync-status" class="sync-status">連線中…</div>
   </div>
 
@@ -42,8 +42,8 @@
     </div>
     <form id="item-form">
       <div class="modal-body">
-        <label>時間
-          <input type="text" id="field-period" placeholder="09:00" required />
+        <label>時間 <span class="modal-tip">請用 24 小時制，例如 09:00，才能自動照時間排序</span>
+          <input type="text" id="field-period" placeholder="09:00" pattern="[0-2][0-9]:[0-5][0-9]" title="請輸入 24 小時制時間，例如 09:00" required />
         </label>
         <label>類型
           <select id="field-category">
