@@ -9,6 +9,21 @@ const CATEGORY_META = {
   note: { badge: "badge-orange", label: "備註" },
 };
 
+const DAY_THEMES = [
+  { color: "#c9704f", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Takayama_Old_Town_%28Sanmachi_Suji%29_%2835819349621%29.jpg/1280px-Takayama_Old_Town_%28Sanmachi_Suji%29_%2835819349621%29.jpg" }, // 高山老街
+  { color: "#4a8256", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Ogimachi_Village-02.jpg/1280px-Ogimachi_Village-02.jpg" }, // 白川鄉
+  { color: "#c99a3a", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Kenrokuen_Garden%2C_Kanazawa_%2853621201294%29.jpg/1280px-Kenrokuen_Garden%2C_Kanazawa_%2853621201294%29.jpg" }, // 金澤兼六園
+  { color: "#3a6ea5", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Kurobe_Dam_-_AlpineRoute6289.jpg/1280px-Kurobe_Dam_-_AlpineRoute6289.jpg" }, // 立山黑部
+  { color: "#4f9e6f", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/150920_Kappa-bashi_Kamikochi_Japan01n.jpg/1280px-150920_Kappa-bashi_Kamikochi_Japan01n.jpg" }, // 上高地
+  { color: "#8a5fa5", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Lake_Suwa%2C_Nagano_Prefecture%3B_May_2019_%2803%29.jpg/1280px-Lake_Suwa%2C_Nagano_Prefecture%3B_May_2019_%2803%29.jpg" }, // 諏訪湖
+  { color: "#b0793a", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/Nagoya_Castle%28Edit2%29.jpg/1280px-Nagoya_Castle%28Edit2%29.jpg" }, // 名古屋城
+  { color: "#3a8ec9", photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Chubu_Centrair_International_Airport_-_North_Wing_-_01.JPG/1280px-Chubu_Centrair_International_Airport_-_North_Wing_-_01.JPG" }, // 中部機場
+];
+
+function themeFor(idx) {
+  return DAY_THEMES[idx % DAY_THEMES.length];
+}
+
 const el = {
   dayPills: document.getElementById("day-pills"),
   dayList: document.getElementById("day-list"),
@@ -148,11 +163,12 @@ function renderPills() {
   }
 
   el.dayPills.innerHTML = "";
-  state.days.forEach((day) => {
+  state.days.forEach((day, idx) => {
     const pill = document.createElement("button");
     pill.type = "button";
     pill.className = "pill";
     pill.dataset.dayId = day.id;
+    pill.style.setProperty("--pill-accent", themeFor(idx).color);
     pill.textContent = day.date;
     pill.addEventListener("click", () => setActiveDay(day.id));
     el.dayPills.appendChild(pill);
@@ -187,10 +203,21 @@ function renderDayList() {
 }
 
 function renderDayCard(day, dayNum) {
+  const theme = themeFor(dayNum - 1);
   const card = document.createElement("div");
   card.className = "day-card";
   card.id = "day-" + day.id;
   card.dataset.dayId = day.id;
+  card.style.setProperty("--day-accent", theme.color);
+
+  const photo = document.createElement("div");
+  photo.className = "day-photo";
+  photo.style.backgroundImage = `linear-gradient(180deg, ${theme.color}33, ${theme.color}cc), url('${theme.photo}')`;
+  const photoBadge = document.createElement("div");
+  photoBadge.className = "day-badge";
+  photoBadge.textContent = "Day " + dayNum;
+  photo.appendChild(photoBadge);
+  card.appendChild(photo);
 
   const hd = document.createElement("div");
   hd.className = "day-hd";
@@ -222,12 +249,7 @@ function renderDayCard(day, dayNum) {
   });
 
   main.append(dateEl, titleEl, hotelEl);
-
-  const badge = document.createElement("div");
-  badge.className = "day-badge";
-  badge.textContent = "Day " + dayNum;
-
-  hd.append(main, badge);
+  hd.append(main);
   card.appendChild(hd);
 
   if (day.items.length === 0) {

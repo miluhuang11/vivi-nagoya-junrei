@@ -110,8 +110,8 @@ body{
   box-shadow: var(--card-shadow);
 }
 .pill.on{
-  background: var(--primary)!important;
-  border-color: var(--primary)!important;
+  background: var(--pill-accent, var(--primary))!important;
+  border-color: var(--pill-accent, var(--primary))!important;
   color: #fff!important;
 }
 
@@ -168,6 +168,17 @@ body{
   to{ opacity: 1; transform: translateY(0); }
 }
 
+.day-photo{
+  height: 130px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 12px;
+}
+
 .day-hd{
   padding: 12px 14px;
   display: flex;
@@ -179,7 +190,7 @@ body{
 .day-hd-main{ flex: 1; min-width: 0; }
 .day-date{
   font-size: 11px;
-  color: var(--text3);
+  color: var(--day-accent, var(--text3));
   font-weight: 700;
   margin-bottom: 2px;
 }
@@ -208,12 +219,13 @@ body{
 .day-badge{
   font-size: 10px;
   font-weight: 700;
-  padding: 3px 9px;
+  padding: 4px 10px;
   border-radius: 20px;
   white-space: nowrap;
-  background: var(--primary-light);
-  color: var(--primary);
+  background: rgba(255,255,255,.92);
+  color: var(--day-accent, var(--primary));
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
 }
 
 /* Category badges */
@@ -248,7 +260,7 @@ body{
 .item-time{
   font-size: 11px;
   font-weight: 600;
-  color: var(--text3);
+  color: var(--day-accent, var(--text3));
   min-width: 40px;
   padding-top: 2px;
   flex-shrink: 0;
