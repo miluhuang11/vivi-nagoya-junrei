@@ -24,6 +24,52 @@ function themeFor(idx) {
   return DAY_THEMES[idx % DAY_THEMES.length];
 }
 
+// 編輯密碼：只是簡單的門檻，避免連結被轉傳出去後被陌生人亂改。
+// 密碼是寫在前端程式碼裡的，不是真正的安全機制，想改密碼就改這個字串。
+const EDIT_PIN = "1106";
+const UNLOCK_KEY = "vivi_trip_unlocked";
+
+function isUnlocked() {
+  return localStorage.getItem(UNLOCK_KEY) === "1";
+}
+
+function requireUnlock() {
+  if (isUnlocked()) return true;
+  const input = prompt("請輸入編輯密碼才能新增／編輯／刪除：");
+  if (input === null) return false;
+  if (input === EDIT_PIN) {
+    localStorage.setItem(UNLOCK_KEY, "1");
+    return true;
+  }
+  alert("密碼不對喔");
+  return false;
+}
+
+function parseDayDate(dateStr, year) {
+  const m = dateStr && dateStr.match(/(\d+)\/(\d+)/);
+  if (!m) return null;
+  return new Date(year, parseInt(m[1], 10) - 1, parseInt(m[2], 10));
+}
+
+function pickInitialDayId(days) {
+  if (!days.length) return null;
+  const now = new Date();
+  const todayStr = now.toDateString();
+  const year = now.getFullYear();
+
+  const todayMatch = days.find((d) => {
+    const dt = parseDayDate(d.date, year);
+    return dt && dt.toDateString() === todayStr;
+  });
+  if (todayMatch) return todayMatch.id;
+
+  const first = parseDayDate(days[0].date, year);
+  const last = parseDayDate(days[days.length - 1].date, year);
+  if (last && now > last) return days[days.length - 1].id;
+  if (first && now < first) return days[0].id;
+  return days[0].id;
+}
+
 const el = {
   dayPills: document.getElementById("day-pills"),
   dayList: document.getElementById("day-list"),
@@ -78,6 +124,7 @@ async function init() {
     return;
   }
 
+  activeDayId = pickInitialDayId(state.days);
   render();
   subscribeRealtime();
 }
@@ -233,6 +280,9 @@ function renderDayCard(day, dayNum) {
   titleEl.className = "day-title";
   titleEl.contentEditable = "true";
   titleEl.textContent = day.title;
+  titleEl.addEventListener("focus", (e) => {
+    if (!requireUnlock()) e.target.blur();
+  });
   titleEl.addEventListener("blur", () => {
     const newVal = titleEl.textContent.trim();
     if (newVal && newVal !== day.title) updateDay(day.id, { title: newVal });
@@ -243,6 +293,9 @@ function renderDayCard(day, dayNum) {
   hotelEl.contentEditable = "true";
   hotelEl.textContent = day.hotel || "";
   hotelEl.setAttribute("data-placeholder", "🏨 點此新增住宿資訊…");
+  hotelEl.addEventListener("focus", (e) => {
+    if (!requireUnlock()) e.target.blur();
+  });
   hotelEl.addEventListener("blur", () => {
     const newVal = hotelEl.textContent.trim();
     if (newVal !== (day.hotel || "")) updateDay(day.id, { hotel: newVal });
@@ -267,7 +320,10 @@ function renderDayCard(day, dayNum) {
   addBtn.type = "button";
   addBtn.className = "add-item-btn";
   addBtn.innerHTML = `<i class="ti ti-plus"></i> 新增`;
-  addBtn.addEventListener("click", () => openModal({ dayId: day.id, item: null }));
+  addBtn.addEventListener("click", () => {
+    if (!requireUnlock()) return;
+    openModal({ dayId: day.id, item: null });
+  });
   addWrap.appendChild(addBtn);
   card.appendChild(addWrap);
 
@@ -318,6 +374,7 @@ function renderItemRow(day, item) {
   editBtn.innerHTML = `<i class="ti ti-pencil"></i>`;
   editBtn.addEventListener("click", (e) => {
     e.stopPropagation();
+    if (!requireUnlock()) return;
     openModal({ dayId: day.id, item });
   });
 
@@ -328,6 +385,7 @@ function renderItemRow(day, item) {
   delBtn.innerHTML = `<i class="ti ti-trash"></i>`;
   delBtn.addEventListener("click", (e) => {
     e.stopPropagation();
+    if (!requireUnlock()) return;
     deleteItem(item);
   });
 
@@ -414,12 +472,26 @@ async function updateDay(dayId, fields) {
 function applyFilter() {
   const query = el.searchInput.value.toLowerCase().trim();
   el.searchClear.hidden = !query;
+  const allCards = document.querySelectorAll(".day-card");
 
-  const activeCard = document.querySelector(".day-card.active");
-  if (!activeCard) return;
-  activeCard.querySelectorAll(".item").forEach((item) => {
-    const match = !query || item.textContent.toLowerCase().includes(query);
-    item.style.display = match ? "flex" : "none";
+  if (!query) {
+    // 沒有搜尋字串：恢復成只顯示目前選到的那一天
+    allCards.forEach((card) => {
+      card.classList.toggle("active", card.dataset.dayId === activeDayId);
+      card.querySelectorAll(".item").forEach((item) => (item.style.display = "flex"));
+    });
+    return;
+  }
+
+  // 有搜尋字串：跨全部天數搜尋，只顯示有符合的那幾天
+  allCards.forEach((card) => {
+    let hasMatch = false;
+    card.querySelectorAll(".item").forEach((item) => {
+      const match = item.textContent.toLowerCase().includes(query);
+      item.style.display = match ? "flex" : "none";
+      if (match) hasMatch = true;
+    });
+    card.classList.toggle("active", hasMatch);
   });
 }
 
