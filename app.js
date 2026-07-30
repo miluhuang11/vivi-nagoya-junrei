@@ -26,7 +26,7 @@ function themeFor(idx) {
 
 // 編輯密碼：只是簡單的門檻，避免連結被轉傳出去後被陌生人亂改。
 // 密碼是寫在前端程式碼裡的，不是真正的安全機制，想改密碼就改這個字串。
-const EDIT_PIN = "1106";
+const EDIT_PIN = "0619";
 const UNLOCK_KEY = "vivi_trip_unlocked";
 
 function isUnlocked() {
