@@ -14,7 +14,6 @@ const el = {
   dayList: document.getElementById("day-list"),
   loading: document.getElementById("loading-msg"),
   syncStatus: document.getElementById("sync-status"),
-  addDayBtn: document.getElementById("add-day-btn"),
   searchInput: document.getElementById("trip-search"),
   searchClear: document.getElementById("search-clear"),
   modalOverlay: document.getElementById("modal-overlay"),
@@ -64,7 +63,6 @@ async function init() {
     return;
   }
 
-  el.addDayBtn.hidden = false;
   render();
   subscribeRealtime();
 }
@@ -392,23 +390,6 @@ async function updateDay(dayId, fields) {
     alert("更新失敗，請檢查網路連線或 Supabase 設定。");
   }
 }
-
-el.addDayBtn.addEventListener("click", async () => {
-  const date = prompt("日期（例如：9/03（四））");
-  if (!date) return;
-  const title = prompt("這天的標題（例如：延伸行程）");
-  if (!title) return;
-  const maxOrder = state.days.reduce((m, d) => Math.max(m, d.order_num), 0);
-  const id = "day" + Date.now();
-  try {
-    await supabase.from("days").insert({ id, order_num: maxOrder + 1, date, title, hotel: "" });
-    await loadData();
-    render();
-  } catch (err) {
-    console.error(err);
-    alert("新增失敗，請檢查網路連線或 Supabase 設定。");
-  }
-});
 
 function applyFilter() {
   const query = el.searchInput.value.toLowerCase().trim();
