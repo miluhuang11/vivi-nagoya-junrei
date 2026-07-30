@@ -31,7 +31,7 @@ const el = {
 
 let state = { days: [] };
 let editingCtx = null;
-let dayObserver = null;
+let activeDayId = null;
 
 function setSyncStatus(text, cls) {
   el.syncStatus.textContent = text;
@@ -145,6 +145,10 @@ function render() {
 }
 
 function renderPills() {
+  if (!activeDayId || !state.days.some((d) => d.id === activeDayId)) {
+    activeDayId = state.days[0]?.id || null;
+  }
+
   el.dayPills.innerHTML = "";
   state.days.forEach((day) => {
     const pill = document.createElement("button");
@@ -152,12 +156,10 @@ function renderPills() {
     pill.className = "pill";
     pill.dataset.dayId = day.id;
     pill.textContent = day.date;
-    pill.addEventListener("click", () => {
-      document.getElementById("day-" + day.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    pill.addEventListener("click", () => setActiveDay(day.id));
     el.dayPills.appendChild(pill);
   });
-  setActivePill(state.days[0]?.id);
+  setActivePill(activeDayId);
 }
 
 function setActivePill(dayId) {
@@ -166,24 +168,23 @@ function setActivePill(dayId) {
   });
 }
 
+function setActiveDay(dayId) {
+  activeDayId = dayId;
+  setActivePill(dayId);
+  document.querySelectorAll(".day-card").forEach((card) => {
+    card.classList.toggle("active", card.dataset.dayId === dayId);
+  });
+  el.dayList.scrollTop = 0;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  applyFilter();
+}
+
 function renderDayList() {
-  dayObserver?.disconnect();
   el.dayList.innerHTML = "";
   state.days.forEach((day, idx) => {
-    el.dayList.appendChild(renderDayCard(day, idx + 1));
-  });
-
-  dayObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) setActivePill(entry.target.dataset.dayId);
-      });
-    },
-    { rootMargin: "-40% 0px -50% 0px" }
-  );
-  state.days.forEach((day) => {
-    const node = document.getElementById("day-" + day.id);
-    if (node) dayObserver.observe(node);
+    const card = renderDayCard(day, idx + 1);
+    if (day.id === activeDayId) card.classList.add("active");
+    el.dayList.appendChild(card);
   });
 }
 
@@ -413,14 +414,11 @@ function applyFilter() {
   const query = el.searchInput.value.toLowerCase().trim();
   el.searchClear.hidden = !query;
 
-  document.querySelectorAll(".day-card").forEach((card) => {
-    let hasMatch = false;
-    card.querySelectorAll(".item").forEach((item) => {
-      const match = !query || item.textContent.toLowerCase().includes(query);
-      item.style.display = match ? "flex" : "none";
-      if (match) hasMatch = true;
-    });
-    card.style.display = query === "" || hasMatch ? "block" : "none";
+  const activeCard = document.querySelector(".day-card.active");
+  if (!activeCard) return;
+  activeCard.querySelectorAll(".item").forEach((item) => {
+    const match = !query || item.textContent.toLowerCase().includes(query);
+    item.style.display = match ? "flex" : "none";
   });
 }
 
