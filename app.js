@@ -213,7 +213,7 @@ function updateHeroBackground(dayId) {
     const theme = themeFor(dayIdx);
     const heroEl = document.querySelector(".hero");
     if (heroEl && theme) {
-      heroEl.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.6)), url('${theme.photo}')`;
+      heroEl.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.3)), url('${theme.photo}')`;
     }
   }
 }
